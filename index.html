@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Invoices</title>
+  <style>
+:root {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --text: #17212f;
+  --muted: #526175;
+  --line: #d6dee8;
+  --accent: #0b6bcb;
+  --accent-2: #0e4b8a;
+  --ok: #1f8f4e;
+  --warn: #c97809;
+  --bad: #bb2730;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background: linear-gradient(145deg, #eef4fc 0%, #f8fafc 45%, #edf3f9 100%);
+}
+
+.site-header {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.site-header h1 { margin: 0; }
+.site-header p { margin: 0.4rem 0 0; color: var(--muted); }
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 3px 14px rgba(15, 34, 61, 0.05);
+}
+
+.panel h2 { margin-top: 0; }
+.full-width { grid-column: 1 / -1; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.full-row { grid-column: 1 / -1; }
+input, textarea, select, button { font: inherit; }
+
+input, textarea, select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button:hover { background: var(--accent-2); }
+
+.stack, .button-row, .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.file-input {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hint { color: var(--muted); font-size: 0.9rem; }
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+th, td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.55rem;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+th {
+  background: #f5f9ff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.status-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.status-Pending { background: #fff7e8; color: var(--warn); }
+.status-Approved { background: #e9f7ef; color: var(--ok); }
+.status-Paid { background: #e8f2ff; color: var(--accent-2); }
+.status-Rejected { background: #fdecec; color: var(--bad); }
+
+.actions { display: flex; gap: 0.35rem; }
+.actions button { padding: 0.4rem 0.55rem; font-size: 0.82rem; }
+.actions .danger { background: var(--bad); }
+
+@media (max-width: 720px) {
+  .app-grid { grid-template-columns: 1fr; }
+  table { min-width: 760px; }
+}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Super Invoices</h1>
+    <p>Organize invoices and generate Purchase Order Justifications.</p>
+  </header>
+
+  <main class="app-grid">
+    <section class="panel">
+      <h2>Add Invoice</h2>
+      <form id="invoice-form" class="form-grid">
+        <label>
+          Vendor
+          <input type="text" name="vendor" required />
+        </label>
+        <label>
+          Invoice #
+          <input type="text" name="invoiceNumber" required />
+        </label>
+        <label>
+          Invoice Date
+          <input type="date" name="invoiceDate" required />
+        </label>
+        <label>
+          Due Date
+          <input type="date" name="dueDate" />
+        </label>
+        <label>
+          Amount
+          <input type="number" name="amount" min="0" step="0.01" required />
+        </label>
+        <label>
+          Currency
+          <input type="text" name="currency" value="USD" maxlength="5" />
+        </label>
+        <label>
+          Department
+          <input type="text" name="department" placeholder="Ops, IT, Finance..." />
+        </label>
+        <label>
+          Category
+          <input type="text" name="category" placeholder="Software, Hardware..." />
+        </label>
+        <label>
+          Status
+          <select name="status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Paid">Paid</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </label>
+        <label class="full-row">
+          Description
+          <textarea name="description" rows="3" placeholder="What was purchased and why?"></textarea>
+        </label>
+        <button type="submit">Save Invoice</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Import / Export</h2>
+      <div class="stack">
+        <label class="file-input">
+          Import JSON
+          <input id="import-json" type="file" accept="application/json" />
+        </label>
+        <label class="file-input">
+          Import PDF Invoice(s)
+          <input id="import-pdf" type="file" accept="application/pdf" multiple />
+        </label>
+        <button id="export-json" type="button">Export Invoices (JSON)</button>
+      </div>
+      <p id="import-status" class="hint"></p>
+      <p class="hint">JSON format can be an array of invoice objects with matching field names.</p>
+      <p class="hint">PDF parsing uses pdf.js from CDN at runtime.</p>
+    </section>
+
+    <section class="panel full-width">
+      <div class="panel-heading">
+        <h2>Invoices</h2>
+        <div class="filters">
+          <input id="search" type="search" placeholder="Search vendor, invoice #, department, category..." />
+          <select id="status-filter">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Paid">Paid</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+          <select id="sort-by">
+            <option value="invoiceDate-desc">Invoice Date (Newest)</option>
+            <option value="invoiceDate-asc">Invoice Date (Oldest)</option>
+            <option value="amount-desc">Amount (High to Low)</option>
+            <option value="amount-asc">Amount (Low to High)</option>
+            <option value="vendor-asc">Vendor (A-Z)</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Select</th>
+              <th>Vendor</th>
+              <th>Invoice #</th>
+              <th>Invoice Date</th>
+              <th>Due</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Department</th>
+              <th>Category</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invoice-table-body"></tbody>
+        </table>
+      </div>
+      <p id="empty-state" class="hint">No invoices yet. Add one above.</p>
+    </section>
+
+    <section class="panel full-width">
+      <h2>Purchase Order Justification Template</h2>
+      <p class="hint">Use placeholders: {{today}}, {{vendor_list}}, {{invoice_list}}, {{total_amount}}, {{departments}}, {{categories}}, {{business_justification}}</p>
+      <textarea id="template" rows="10"></textarea>
+      <div class="button-row">
+        <button id="generate-po" type="button">Generate PO Justification from Selected</button>
+        <button id="copy-output" type="button">Copy Output</button>
+        <button id="download-output" type="button">Download .txt</button>
+      </div>
+      <h3>Generated Output</h3>
+      <textarea id="output" rows="12" readonly></textarea>
+    </section>
+  </main>
+
+  <template id="default-template">
+PURCHASE ORDER JUSTIFICATION
+Date: {{today}}
+
+Summary
+This request covers payment for the following invoices from {{vendor_list}}.
+
+Invoices Included
+{{invoice_list}}
+
+Financial Impact
+Total requested amount: {{total_amount}}
+Departments: {{departments}}
+Categories: {{categories}}
+
+Business Justification
+{{business_justification}}
+
+Approval Request
+Approval is requested to issue a Purchase Order to process these invoices in a timely manner and maintain service continuity.
+  </template>
+
+  <script>
+const STORAGE_KEY = "super_invoices_v1";
+const TEMPLATE_KEY = "super_invoices_template_v1";
+
+const state = {
+  invoices: [],
+  selected: new Set(),
+  search: "",
+  statusFilter: "",
+  sortBy: "invoiceDate-desc",
+};
+
+const dom = {
+  form: document.getElementById("invoice-form"),
+  tbody: document.getElementById("invoice-table-body"),
+  emptyState: document.getElementById("empty-state"),
+  search: document.getElementById("search"),
+  statusFilter: document.getElementById("status-filter"),
+  sortBy: document.getElementById("sort-by"),
+  importJson: document.getElementById("import-json"),
+  importPdf: document.getElementById("import-pdf"),
+  importStatus: document.getElementById("import-status"),
+  exportJson: document.getElementById("export-json"),
+  template: document.getElementById("template"),
+  generate: document.getElementById("generate-po"),
+  output: document.getElementById("output"),
+  copyOutput: document.getElementById("copy-output"),
+  downloadOutput: document.getElementById("download-output"),
+  defaultTemplate: document.getElementById("default-template"),
+};
+
+init();
+
+function init() {
+  loadState();
+  bindEvents();
+  renderTable();
+}
+
+function bindEvents() {
+  dom.form.addEventListener("submit", onSubmitInvoice);
+  dom.search.addEventListener("input", (e) => {
+    state.search = e.target.value.trim().toLowerCase();
+    renderTable();
+  });
+  dom.statusFilter.addEventListener("change", (e) => {
+    state.statusFilter = e.target.value;
+    renderTable();
+  });
+  dom.sortBy.addEventListener("change", (e) => {
+    state.sortBy = e.target.value;
+    renderTable();
+  });
+
+  dom.importJson.addEventListener("change", onImportJson);
+  dom.importPdf.addEventListener("change", onImportPdf);
+  dom.exportJson.addEventListener("click", onExportJson);
+  dom.generate.addEventListener("click", onGenerateJustification);
+  dom.copyOutput.addEventListener("click", onCopyOutput);
+  dom.downloadOutput.addEventListener("click", onDownloadOutput);
+
+  dom.template.addEventListener("input", () => {
+    localStorage.setItem(TEMPLATE_KEY, dom.template.value);
+  });
+}
+
+function loadState() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        state.invoices = parsed.map(normalizeInvoice).filter(Boolean);
+      }
+    } catch {
+      state.invoices = [];
+    }
+  }
+
+  const savedTemplate = localStorage.getItem(TEMPLATE_KEY);
+  dom.template.value = savedTemplate || dom.defaultTemplate.textContent.trim();
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.invoices));
+}
+
+function onSubmitInvoice(e) {
+  e.preventDefault();
+  const data = new FormData(dom.form);
+  const invoice = normalizeInvoice(Object.fromEntries(data.entries()));
+  if (!invoice) {
+    alert("Invoice could not be saved. Please check required fields.");
+    return;
+  }
+
+  state.invoices.push(invoice);
+  saveState();
+  dom.form.reset();
+  dom.form.currency.value = "USD";
+  dom.form.status.value = "Pending";
+  renderTable();
+}
+
+function normalizeInvoice(raw) {
+  if (!raw) return null;
+
+  const amount = Number(raw.amount);
+  if (!raw.vendor || !raw.invoiceNumber || !raw.invoiceDate || Number.isNaN(amount)) {
+    return null;
+  }
+
+  const id = raw.id || crypto.randomUUID();
+  return {
+    id,
+    vendor: String(raw.vendor).trim(),
+    invoiceNumber: String(raw.invoiceNumber).trim(),
+    invoiceDate: String(raw.invoiceDate),
+    dueDate: String(raw.dueDate || ""),
+    amount,
+    currency: String(raw.currency || "USD").trim().toUpperCase(),
+    department: String(raw.department || "").trim(),
+    category: String(raw.category || "").trim(),
+    status: String(raw.status || "Pending").trim(),
+    description: String(raw.description || "").trim(),
+    createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
+function getVisibleInvoices() {
+  const [sortField, sortDirection] = state.sortBy.split("-");
+
+  return state.invoices
+    .filter((inv) => {
+      const searchTarget = [
+        inv.vendor,
+        inv.invoiceNumber,
+        inv.department,
+        inv.category,
+        inv.description,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !state.search || searchTarget.includes(state.search);
+      const matchesStatus = !state.statusFilter || inv.status === state.statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      let left = a[sortField];
+      let right = b[sortField];
+
+      if (sortField === "amount") {
+        left = Number(left);
+        right = Number(right);
+      }
+
+      if (sortField.includes("Date")) {
+        left = new Date(left || 0).getTime();
+        right = new Date(right || 0).getTime();
+      }
+
+      if (typeof left === "string") left = left.toLowerCase();
+      if (typeof right === "string") right = right.toLowerCase();
+
+      if (left < right) return sortDirection === "asc" ? -1 : 1;
+      if (left > right) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+}
+
+function renderTable() {
+  const visible = getVisibleInvoices();
+  dom.tbody.innerHTML = "";
+
+  for (const inv of visible) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" data-select-id="${inv.id}" ${state.selected.has(inv.id) ? "checked" : ""}></td>
+      <td>${escapeHtml(inv.vendor)}</td>
+      <td>${escapeHtml(inv.invoiceNumber)}</td>
+      <td>${escapeHtml(inv.invoiceDate)}</td>
+      <td>${escapeHtml(inv.dueDate || "-")}</td>
+      <td>${formatMoney(inv.amount, inv.currency)}</td>
+      <td><span class="status-pill status-${escapeHtml(inv.status)}">${escapeHtml(inv.status)}</span></td>
+      <td>${escapeHtml(inv.department || "-")}</td>
+      <td>${escapeHtml(inv.category || "-")}</td>
+      <td class="actions">
+        <button type="button" data-edit-id="${inv.id}">Edit</button>
+        <button type="button" class="danger" data-delete-id="${inv.id}">Delete</button>
+      </td>
+    `;
+
+    dom.tbody.appendChild(tr);
+  }
+
+  dom.emptyState.style.display = visible.length ? "none" : "block";
+
+  dom.tbody.querySelectorAll("[data-select-id]").forEach((el) => {
+    el.addEventListener("change", (e) => {
+      const id = e.target.getAttribute("data-select-id");
+      if (e.target.checked) state.selected.add(id);
+      else state.selected.delete(id);
+    });
+  });
+
+  dom.tbody.querySelectorAll("[data-delete-id]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.getAttribute("data-delete-id");
+      state.invoices = state.invoices.filter((i) => i.id !== id);
+      state.selected.delete(id);
+      saveState();
+      renderTable();
+    });
+  });
+
+  dom.tbody.querySelectorAll("[data-edit-id]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.getAttribute("data-edit-id");
+      editInvoice(id);
+    });
+  });
+}
+
+function editInvoice(id) {
+  const inv = state.invoices.find((i) => i.id === id);
+  if (!inv) return;
+
+  dom.form.vendor.value = inv.vendor;
+  dom.form.invoiceNumber.value = inv.invoiceNumber;
+  dom.form.invoiceDate.value = inv.invoiceDate;
+  dom.form.dueDate.value = inv.dueDate;
+  dom.form.amount.value = inv.amount;
+  dom.form.currency.value = inv.currency;
+  dom.form.department.value = inv.department;
+  dom.form.category.value = inv.category;
+  dom.form.status.value = inv.status;
+  dom.form.description.value = inv.description;
+
+  state.invoices = state.invoices.filter((i) => i.id !== id);
+  state.selected.delete(id);
+  saveState();
+  renderTable();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function onImportJson(e) {
+  const file = (e.target.files || [])[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      if (!Array.isArray(parsed)) {
+        alert("JSON must be an array of invoice objects.");
+        return;
+      }
+
+      const normalized = parsed.map(normalizeInvoice).filter(Boolean);
+      state.invoices.push(...normalized);
+      saveState();
+      renderTable();
+      alert(`Imported ${normalized.length} invoices.`);
+    } catch {
+      alert("Could not parse JSON file.");
+    }
+  };
+
+  reader.readAsText(file);
+  e.target.value = "";
+}
+
+async function onImportPdf(e) {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+
+  const ok = await ensurePdfJs();
+  if (!ok) {
+    setImportStatus("PDF parser failed to load. Check internet access and refresh.", true);
+    e.target.value = "";
+    return;
+  }
+
+  let imported = 0;
+  let skipped = 0;
+  setImportStatus(`Parsing ${files.length} PDF file(s)...`);
+
+  for (const file of files) {
+    try {
+      const text = await extractPdfText(file);
+      const parsed = parseInvoiceFromText(text, file.name);
+      const invoice = normalizeInvoice(parsed);
+      if (!invoice) {
+        skipped += 1;
+        continue;
+      }
+      state.invoices.push(invoice);
+      imported += 1;
+    } catch {
+      skipped += 1;
+    }
+  }
+
+  saveState();
+  renderTable();
+  setImportStatus(`PDF import complete. Imported: ${imported}. Skipped: ${skipped}.`, skipped > 0);
+  e.target.value = "";
+}
+
+function onExportJson() {
+  const blob = new Blob([JSON.stringify(state.invoices, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `invoices-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function onGenerateJustification() {
+  const selected = state.invoices.filter((i) => state.selected.has(i.id));
+  if (!selected.length) {
+    alert("Select at least one invoice first.");
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const vendorList = unique(selected.map((x) => x.vendor)).join(", ");
+  const departments = unique(selected.map((x) => x.department).filter(Boolean)).join(", ") || "N/A";
+  const categories = unique(selected.map((x) => x.category).filter(Boolean)).join(", ") || "N/A";
+
+  const totalByCurrency = groupTotalByCurrency(selected);
+  const totalAmount = Object.entries(totalByCurrency)
+    .map(([currency, total]) => `${currency} ${total.toFixed(2)}`)
+    .join(" + ");
+
+  const invoiceList = selected
+    .map((inv) => {
+      const details = [
+        `- ${inv.vendor} | Invoice ${inv.invoiceNumber}`,
+        `Date: ${inv.invoiceDate}`,
+        `Amount: ${inv.currency} ${inv.amount.toFixed(2)}`,
+        inv.department ? `Dept: ${inv.department}` : null,
+        inv.category ? `Category: ${inv.category}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
+      return details;
+    })
+    .join("\n");
+
+  const businessJustification = selected
+    .map((inv) => inv.description)
+    .filter(Boolean)
+    .join(" ") ||
+    "These purchases are required for ongoing operations and to avoid service disruption.";
+
+  const result = renderTemplate(dom.template.value, {
+    today,
+    vendor_list: vendorList,
+    invoice_list: invoiceList,
+    total_amount: totalAmount,
+    departments,
+    categories,
+    business_justification: businessJustification,
+  });
+
+  dom.output.value = result;
+}
+
+function onCopyOutput() {
+  if (!dom.output.value.trim()) {
+    alert("Generate output first.");
+    return;
+  }
+
+  navigator.clipboard.writeText(dom.output.value)
+    .then(() => alert("Copied."))
+    .catch(() => alert("Clipboard blocked by browser. Copy manually."));
+}
+
+function onDownloadOutput() {
+  if (!dom.output.value.trim()) {
+    alert("Generate output first.");
+    return;
+  }
+
+  const blob = new Blob([dom.output.value], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `po-justification-${new Date().toISOString().slice(0, 10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function extractPdfText(file) {
+  const data = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+  const pages = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const pageText = content.items.map((item) => item.str || "").join(" ");
+    pages.push(pageText);
+  }
+
+  return pages.join("\n");
+}
+
+function parseInvoiceFromText(text, fileName) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const vendor = findFirst(cleaned, [
+    /vendor[:\s]+([a-z0-9&.,'()\-\/\s]{2,80})/i,
+    /bill\s+from[:\s]+([a-z0-9&.,'()\-\/\s]{2,80})/i,
+    /from[:\s]+([a-z0-9&.,'()\-\/\s]{2,80})/i,
+  ]) || fallbackVendorFromFile(fileName);
+
+  const invoiceNumber = findFirst(cleaned, [
+    /invoice(?:\s+number|\s+#|#| no\.?)[:\s]+([a-z0-9\-\/]{2,40})/i,
+    /\binv(?:oice)?\s*(?:no\.?|#)\s*[:\-]?\s*([a-z0-9\-\/]{2,40})/i,
+    /\bref(?:erence)?\s*[:\-]?\s*([a-z0-9\-\/]{3,40})/i,
+  ]) || `AUTO-${Date.now().toString().slice(-6)}`;
+
+  const invoiceDateRaw = findFirst(cleaned, [
+    /invoice\s+date[:\s]+([a-z0-9,.\-\/ ]{6,30})/i,
+    /\bdate[:\s]+([a-z0-9,.\-\/ ]{6,30})/i,
+  ]);
+  const dueDateRaw = findFirst(cleaned, [
+    /due\s+date[:\s]+([a-z0-9,.\-\/ ]{6,30})/i,
+    /payment\s+due[:\s]+([a-z0-9,.\-\/ ]{6,30})/i,
+  ]);
+
+  const amountRaw = findFirst(cleaned, [
+    /(?:amount\s+due|balance\s+due|total\s+due|grand\s+total|total)[:\s$]*([0-9,]+(?:\.[0-9]{2})?)/i,
+    /\bUSD\s*([0-9,]+(?:\.[0-9]{2})?)/i,
+    /\$\s*([0-9,]+(?:\.[0-9]{2})?)/i,
+  ]) || "0";
+
+  const amount = Number(amountRaw.replaceAll(",", ""));
+  const currency = detectCurrency(cleaned);
+  const invoiceDate = normalizeDateString(invoiceDateRaw) || today;
+  const dueDate = normalizeDateString(dueDateRaw) || "";
+
+  return {
+    vendor: vendor.slice(0, 80),
+    invoiceNumber: invoiceNumber.slice(0, 40),
+    invoiceDate,
+    dueDate,
+    amount: Number.isNaN(amount) ? 0 : amount,
+    currency,
+    department: "",
+    category: "",
+    status: "Pending",
+    description: `Imported from PDF: ${fileName}`,
+  };
+}
+
+function findFirst(text, patterns) {
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) return String(match[1]).trim();
+  }
+  return "";
+}
+
+function fallbackVendorFromFile(fileName) {
+  return String(fileName || "Unknown Vendor")
+    .replace(/\.pdf$/i, "")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .slice(0, 80) || "Unknown Vendor";
+}
+
+function detectCurrency(text) {
+  if (/\bEUR\b|€/i.test(text)) return "EUR";
+  if (/\bGBP\b|£/i.test(text)) return "GBP";
+  if (/\bCAD\b/i.test(text)) return "CAD";
+  if (/\bAUD\b/i.test(text)) return "AUD";
+  if (/\bJPY\b|¥/i.test(text)) return "JPY";
+  return "USD";
+}
+
+function normalizeDateString(input) {
+  if (!input) return "";
+  const value = String(input).trim();
+
+  const direct = new Date(value);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct.toISOString().slice(0, 10);
+  }
+
+  const mdy = value.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);
+  if (mdy) {
+    const month = mdy[1].padStart(2, "0");
+    const day = mdy[2].padStart(2, "0");
+    const year = mdy[3].length === 2 ? `20${mdy[3]}` : mdy[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  const ymd = value.match(/\b(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\b/);
+  if (ymd) {
+    const year = ymd[1];
+    const month = ymd[2].padStart(2, "0");
+    const day = ymd[3].padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return "";
+}
+
+function setImportStatus(message, isError = false) {
+  dom.importStatus.textContent = message;
+  dom.importStatus.style.color = isError ? "#bb2730" : "";
+}
+
+function renderTemplate(template, vars) {
+  return template.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_, key) => vars[key] ?? "");
+}
+
+function groupTotalByCurrency(items) {
+  return items.reduce((acc, item) => {
+    acc[item.currency] = (acc[item.currency] || 0) + item.amount;
+    return acc;
+  }, {});
+}
+
+function unique(values) {
+  return [...new Set(values)];
+}
+
+function formatMoney(amount, currency) {
+  return `${escapeHtml(currency)} ${Number(amount).toFixed(2)}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function ensurePdfJs() {
+  return new Promise((resolve) => {
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.async = true;
+    script.onload = () => {
+      if (!window.pdfjsLib) {
+        resolve(false);
+        return;
+      }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(true);
+    };
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
+  </script>
+</body>
+</html>
